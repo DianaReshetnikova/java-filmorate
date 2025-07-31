@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.controller;
 
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,7 +25,7 @@ public class UserController {
     }
 
     @PostMapping
-    public User createUser(@RequestBody User newUser) {
+    public User createUser(@Valid @RequestBody User newUser) {
         try {
             validateUser(newUser);
 
@@ -39,7 +40,7 @@ public class UserController {
     }
 
     @PutMapping
-    public User updateUser(@RequestBody User newUser) {
+    public User updateUser(@Valid @RequestBody User newUser) {
         try {
             if (newUser.getId() == null) {
                 throw new ValidationException("Id пользователя должен быть указан");
@@ -59,12 +60,8 @@ public class UserController {
     }
 
     private void validateUser(User newUser) throws ValidationException {
-        if (newUser.getEmail() == null || newUser.getEmail().isBlank() || !newUser.getEmail().contains("@"))
-            throw new ValidationException("Электронная почта не может быть пустой и должна содержать символ @");
-        if (newUser.getLogin() == null || newUser.getLogin().isBlank() || newUser.getLogin().contains(" "))
-            throw new ValidationException("Логин не может быть пустым и содержать пробелы;");
-        if (newUser.getBirthday().isAfter(LocalDate.now()))
-            throw new ValidationException("Дата рождения не может быть в будущем");
+        if (newUser.getLogin().contains(" "))
+            throw new ValidationException("Логин не может быть пустым и содержать пробелы");
 
         if (newUser.getName() == null || newUser.getName().isBlank())
             newUser.setName(newUser.getLogin());
