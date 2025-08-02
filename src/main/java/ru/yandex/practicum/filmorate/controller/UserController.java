@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.validation.UserValidation;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -26,8 +27,7 @@ public class UserController {
     @PostMapping
     public User createUser(@Valid @RequestBody User newUser) {
         try {
-            validateUser(newUser);
-
+            UserValidation.validateUser(newUser);
             newUser.setId(getNextId());
             users.put(newUser.getId(), newUser);
             log.info("Добавлен пользователь {}.", newUser);
@@ -41,29 +41,19 @@ public class UserController {
     @PutMapping
     public User updateUser(@Valid @RequestBody User newUser) {
         try {
-            if (newUser.getId() == null) {
+            if (newUser.getId() == null)
                 throw new ValidationException("Id пользователя должен быть указан");
-            }
-            if (users.containsKey(newUser.getId())) {
-                validateUser(newUser);
+            if (!users.containsKey(newUser.getId()))
+                throw new NotFoundException("Пользователь с id = " + newUser.getId() + " не найден");
 
-                users.put(newUser.getId(), newUser);
-                log.info("Обновлен пользователь: {}.", newUser);
-                return newUser;
-            }
-            throw new NotFoundException("Пользователь с id = " + newUser.getId() + " не найден");
+            UserValidation.validateUser(newUser);
+            users.put(newUser.getId(), newUser);
+            log.info("Обновлен пользователь: {}.", newUser);
+            return newUser;
         } catch (ValidationException | NotFoundException ex) {
             log.debug(ex.getMessage());
             throw ex;
         }
-    }
-
-    private void validateUser(User newUser) throws ValidationException {
-        if (newUser.getLogin().contains(" "))
-            throw new ValidationException("Логин не может быть пустым и содержать пробелы");
-
-        if (newUser.getName() == null || newUser.getName().isBlank())
-            newUser.setName(newUser.getLogin());
     }
 
     private long getNextId() {
