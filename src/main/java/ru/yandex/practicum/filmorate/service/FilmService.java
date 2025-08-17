@@ -28,9 +28,11 @@ public class FilmService {
 
         if (film != null && user != null) {
             Set<Long> userIdsLikes = film.getUserIdsLiked();
-            userIdsLikes.add(userId);
-            film.setUserIdsLiked(userIdsLikes);
-            log.info("Пользователь {} поставил лайк фильму: {}.", userId, filmId);
+            if (!userIdsLikes.contains(userId)) {
+                userIdsLikes.add(userId);
+                film.setUserIdsLiked(userIdsLikes);
+                log.info("Пользователь {} поставил лайк фильму: {}.", userId, filmId);
+            }
         }
 
         return film;
@@ -42,9 +44,11 @@ public class FilmService {
 
         if (film != null && user != null) {
             Set<Long> userIdsLikes = film.getUserIdsLiked();
-            userIdsLikes.remove(userId);
-            film.setUserIdsLiked(userIdsLikes);
-            log.info("Пользователь {} удалил лайк с фильма: {}.", userId, filmId);
+            if(userIdsLikes.contains(userId)){
+                userIdsLikes.remove(userId);
+                film.setUserIdsLiked(userIdsLikes);
+                log.info("Пользователь {} удалил лайк с фильма: {}.", userId, filmId);
+            }
         }
 
         return film;
