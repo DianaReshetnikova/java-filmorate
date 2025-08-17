@@ -18,35 +18,35 @@ import java.util.stream.Collectors;
 public class UserService {
     private final UserStorage userStorage;
 
-    public void addFriend(Long user1_Id, Long user2_Id) {
-        User user1 = userStorage.getUserById(user1_Id);
-        User user2 = userStorage.getUserById(user2_Id);
+    public void addFriend(Long user1Id, Long user2Id) {
+        User user1 = userStorage.getUserById(user1Id);
+        User user2 = userStorage.getUserById(user2Id);
 
         if (user1 != null && user2 != null) {
-            Set<Long> user1_Friends = user1.getFriendsIds();
-            Set<Long> user2_Friends = user2.getFriendsIds();
-            if (!user1_Friends.contains(user2_Id) && !user2_Friends.contains(user1_Id)) {
-                user1_Friends.add(user2_Id);
-                user2_Friends.add(user1_Id);
+            Set<Long> user1Friends = user1.getFriendsIds();
+            Set<Long> user2Friends = user2.getFriendsIds();
+            if (!user1Friends.contains(user2Id) && !user2Friends.contains(user1Id)) {
+                user1Friends.add(user2Id);
+                user2Friends.add(user1Id);
 
-                log.info("Пользователи {} и {} добавили друга друга в друзья.", user1_Id, user2_Id);
+                log.info("Пользователи {} и {} добавили друга друга в друзья.", user1Id, user2Id);
             }
         }
     }
 
-    public void deleteFriend(Long user1_Id, Long user2_Id) {
-        User user1 = userStorage.getUserById(user1_Id);
-        User user2 = userStorage.getUserById(user2_Id);
+    public void deleteFriend(Long user1Id, Long user2Id) {
+        User user1 = userStorage.getUserById(user1Id);
+        User user2 = userStorage.getUserById(user2Id);
 
         if (user1 != null && user2 != null) {
-            Set<Long> user1_Friends = user1.getFriendsIds();
-            Set<Long> user2_Friends = user2.getFriendsIds();
+            Set<Long> user1Friends = user1.getFriendsIds();
+            Set<Long> user2Friends = user2.getFriendsIds();
 
-            if (user1_Friends.contains(user2_Id) && user2_Friends.contains(user1_Id)) {
-                user1_Friends.remove(user2_Id);
-                user2_Friends.remove(user1_Id);
+            if (user1Friends.contains(user2Id) && user2Friends.contains(user1Id)) {
+                user1Friends.remove(user2Id);
+                user2Friends.remove(user1Id);
 
-                log.info("Пользователи {} и {} удалили друга друга из друзей.", user1_Id, user2_Id);
+                log.info("Пользователи {} и {} удалили друга друга из друзей.", user1Id, user2Id);
             }
         }
     }
