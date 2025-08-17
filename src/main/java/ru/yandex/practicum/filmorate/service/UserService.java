@@ -66,12 +66,12 @@ public class UserService {
         User user1 = userStorage.getUserById(userId);
         User user2 = userStorage.getUserById(friendId);
 
-        Set<Long> user1_Friends = user1.getFriendsIds();
-        Set<Long> user2_Friends = user2.getFriendsIds();
+        Set<Long> user1Friends = user1.getFriendsIds();
+        Set<Long> user2Friends = user2.getFriendsIds();
 
         //общие элементы Long для двух списков
-        Set<Long> intersectingIds = user1_Friends.stream()
-                .filter(user2_Friends::contains)
+        Set<Long> intersectingIds = user1Friends.stream()
+                .filter(user2Friends::contains)
                 .collect(Collectors.toSet());
 
         log.info("Пользователь {} и {} имеют {} общих друзей.", userId, friendId, intersectingIds.size());
