@@ -22,5 +22,5 @@ public class Film {
     @PositiveOrZero(message = "Продолжительность фильма должна быть положительным числом")
     private int duration;
     //список Id пользователей которые поставили лайк фильму
-    private Set<Long> userIdsLiked = new HashSet<>();
+    private final Set<Long> userIdsLiked = new HashSet<>();
 }

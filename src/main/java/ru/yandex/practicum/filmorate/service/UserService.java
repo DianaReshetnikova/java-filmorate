@@ -27,10 +27,7 @@ public class UserService {
             Set<Long> user2_Friends = user2.getFriendsIds();
             if (!user1_Friends.contains(user2_Id) && !user2_Friends.contains(user1_Id)) {
                 user1_Friends.add(user2_Id);
-                user1.setFriendsIds(user1_Friends);
-
                 user2_Friends.add(user1_Id);
-                user2.setFriendsIds(user2_Friends);
 
                 log.info("Пользователи {} и {} добавили друга друга в друзья.", user1_Id, user2_Id);
             }
@@ -47,10 +44,7 @@ public class UserService {
 
             if (user1_Friends.contains(user2_Id) && user2_Friends.contains(user1_Id)) {
                 user1_Friends.remove(user2_Id);
-                user1.setFriendsIds(user1_Friends);
-
                 user2_Friends.remove(user1_Id);
-                user2.setFriendsIds(user2_Friends);
 
                 log.info("Пользователи {} и {} удалили друга друга из друзей.", user1_Id, user2_Id);
             }

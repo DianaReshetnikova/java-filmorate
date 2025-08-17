@@ -74,7 +74,7 @@ public class InMemoryUserStorage implements UserStorage {
     }
 
 
-    private void validateUserId(Long id){
+    private void validateUserId(Long id) {
         if (id == null)
             throw new ValidationException("Id пользователя должен быть указан");
         if (!users.containsKey(id))
