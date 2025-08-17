@@ -1,67 +1,63 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import jakarta.validation.Valid;
-import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.validation.UserValidation;
+import ru.yandex.practicum.filmorate.service.UserService;
+import ru.yandex.practicum.filmorate.storage.UserStorage;
 
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/users")
-@Slf4j
+@RequiredArgsConstructor
 public class UserController {
-    private final Map<Long, User> users = new HashMap<>();
+    private final UserStorage userStorage;
+    private final UserService userService;
 
     @GetMapping
     public Collection<User> getUsers() {
-        return users.values();
+        return userStorage.getUsers();
     }
 
     @PostMapping
     public User createUser(@Valid @RequestBody User newUser) {
-        try {
-            UserValidation.validateUser(newUser);
-            newUser.setId(getNextId());
-            users.put(newUser.getId(), newUser);
-            log.info("Добавлен пользователь {}.", newUser);
-            return newUser;
-        } catch (ValidationException ex) {
-            log.debug(ex.getMessage());
-            throw ex;
-        }
+        return userStorage.createUser(newUser);
     }
 
     @PutMapping
     public User updateUser(@Valid @RequestBody User newUser) {
-        try {
-            if (newUser.getId() == null)
-                throw new ValidationException("Id пользователя должен быть указан");
-            if (!users.containsKey(newUser.getId()))
-                throw new NotFoundException("Пользователь с id = " + newUser.getId() + " не найден");
-
-            UserValidation.validateUser(newUser);
-            users.put(newUser.getId(), newUser);
-            log.info("Обновлен пользователь: {}.", newUser);
-            return newUser;
-        } catch (ValidationException | NotFoundException ex) {
-            log.debug(ex.getMessage());
-            throw ex;
-        }
+        return userStorage.updateUser(newUser);
     }
 
-    private long getNextId() {
-        long currentMaxId = users.keySet()
-                .stream()
-                .mapToLong(id -> id)
-                .max()
-                .orElse(0);
-        return ++currentMaxId;
+    @GetMapping("/{userId}")
+    public User getUserById(@PathVariable Long id) {
+        return userStorage.getUserById(id);
+    }
+
+    @DeleteMapping("/{userId}")
+    public void deleteUser(@PathVariable long userId) {
+        userStorage.deleteUser(userId);
+    }
+
+    @PutMapping("/{id}/friends/{friendId}")
+    public void addFriend(@PathVariable Long id, @PathVariable Long friendId) {
+        userService.addFriend(id, friendId);
+    }
+
+    @DeleteMapping("/{id}/friends/{friendId}")
+    public void deleteFriend(@PathVariable Long id, @PathVariable Long friendId) {
+        userService.deleteFriend(id, friendId);
+    }
+
+    @GetMapping("/{id}/friends")
+    public Collection<User> getFriendsOfUser(@PathVariable Long id) {
+        return userService.getFriendsOfUser(id);
+    }
+
+    @GetMapping("/{id}/friends/common/{otherId}")
+    public Collection<User> getIntersectingFriends(@PathVariable Long id, @PathVariable Long otherId) {
+        return userService.getIntersectingFriends(id, otherId);
     }
 }

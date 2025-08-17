@@ -5,6 +5,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.service.FilmService;
+import ru.yandex.practicum.filmorate.storage.FilmStorage;
+import ru.yandex.practicum.filmorate.storage.InMemoryFilmStorage;
+import ru.yandex.practicum.filmorate.storage.InMemoryUserStorage;
+import ru.yandex.practicum.filmorate.storage.UserStorage;
 
 import java.time.LocalDate;
 import java.time.Month;
@@ -13,7 +18,10 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 class FilmControllerTest {
-    private final FilmController filmController = new FilmController();
+    private final FilmStorage filmStorage = new InMemoryFilmStorage();
+    private final UserStorage userStorage = new InMemoryUserStorage();
+    private final FilmService filmService = new FilmService(filmStorage, userStorage);
+    private final FilmController filmController = new FilmController(filmStorage, filmService);
 
     //                              should not create film
     @Test
