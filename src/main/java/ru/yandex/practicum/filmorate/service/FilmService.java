@@ -22,6 +22,26 @@ public class FilmService {
     private final FilmStorage filmStorage;
     private final UserStorage userStorage;
 
+    public Collection<Film> getFilms() {
+        return filmStorage.getFilms();
+    }
+
+    public Film createFilm(Film newFilm) {
+        return filmStorage.createFilm(newFilm);
+    }
+
+    public Film updateFilm(Film newFilm) {
+        return filmStorage.updateFilm(newFilm);
+    }
+
+    public void deleteFilm(Long id) {
+        filmStorage.deleteFilm(id);
+    }
+
+    public Film getFilmById(Long id) {
+        return filmStorage.getFilmById(id);
+    }
+
     public Film addLikeToFilm(Long filmId, Long userId) {
         Film film = filmStorage.getFilmById(filmId);
         User user = userStorage.getUserById(userId);
@@ -71,10 +91,8 @@ public class FilmService {
 
             if (item1.getUserIdsLiked().size() > item2.getUserIdsLiked().size()) {
                 return 1;
-
             } else if (item1.getUserIdsLiked().size() < item2.getUserIdsLiked().size()) {
                 return -1;
-
             } else {
                 return 0;
             }

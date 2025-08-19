@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class UserControllerTest {
     private final UserStorage userStorage = new InMemoryUserStorage();
     private final UserService userService = new UserService(userStorage);
-    private final UserController userController = new UserController(userStorage, userService);
+    private final UserController userController = new UserController(userService);
 
     @Test
     void shouldNotCreateUserWithLoginContainsSpaces() {

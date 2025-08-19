@@ -18,6 +18,26 @@ import java.util.stream.Collectors;
 public class UserService {
     private final UserStorage userStorage;
 
+    public Collection<User> getUsers() {
+        return userStorage.getUsers();
+    }
+
+    public User createUser(User newUser) {
+        return userStorage.createUser(newUser);
+    }
+
+    public User updateUser(User newUser) {
+        return userStorage.updateUser(newUser);
+    }
+
+    public void deleteUser(Long id) {
+        userStorage.deleteUser(id);
+    }
+
+    public User getUserById(Long id) {
+        return userStorage.getUserById(id);
+    }
+
     public void addFriend(Long user1Id, Long user2Id) {
         User user1 = userStorage.getUserById(user1Id);
         User user2 = userStorage.getUserById(user2Id);
