@@ -7,10 +7,9 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
-/**
- * Film.
- */
 @Data
 @Builder(toBuilder = true)
 public class Film {
@@ -22,4 +21,6 @@ public class Film {
     private LocalDate releaseDate;
     @PositiveOrZero(message = "Продолжительность фильма должна быть положительным числом")
     private int duration;
+    //список Id пользователей которые поставили лайк фильму
+    private final Set<Long> userIdsLiked = new HashSet<>();
 }
