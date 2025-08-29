@@ -1,3 +1,3 @@
 # java-filmorate
 Template repository for Filmorate project.
-![App Screenshot](database scheme.png)
+![alt text](https://github.com/DianaReshetnikova/java-filmorate/blob/[branch]/database scheme.png?raw=true)
