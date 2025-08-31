@@ -3,15 +3,20 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.exception.InvalidJsonFieldException;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.storage.FilmStorage;
-import ru.yandex.practicum.filmorate.storage.UserStorage;
+import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.MPA;
+import ru.yandex.practicum.filmorate.storage.interfaces.FilmStorage;
+import ru.yandex.practicum.filmorate.storage.interfaces.GenreStorage;
+import ru.yandex.practicum.filmorate.storage.interfaces.MpaStorage;
+import ru.yandex.practicum.filmorate.storage.interfaces.UserStorage;
+import ru.yandex.practicum.filmorate.validation.FilmValidation;
 
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 // Указываем, что класс является бином и его
 // нужно добавить в контекст приложения
@@ -21,81 +26,128 @@ import java.util.stream.Collectors;
 public class FilmService {
     private final FilmStorage filmStorage;
     private final UserStorage userStorage;
+    private final MpaStorage mpaStorage;
+    private final GenreStorage genreStorage;
 
     public Collection<Film> getFilms() {
         return filmStorage.getFilms();
     }
 
     public Film createFilm(Film newFilm) {
-        return filmStorage.createFilm(newFilm);
+        try {
+            if (newFilm.getId() != 0)
+                throw new InvalidJsonFieldException("Для нового фильма нельзя указать Id");
+
+            FilmValidation.validateFilmReleaseDate(newFilm);
+            validateMpa(newFilm.getMpa());
+            validateGenres(newFilm.getGenres());
+
+            return filmStorage.createFilm(newFilm);
+        } catch (ValidationException | InvalidJsonFieldException | NotFoundException ex) {
+            log.debug(ex.getMessage());
+            throw ex;
+        }
     }
 
     public Film updateFilm(Film newFilm) {
-        return filmStorage.updateFilm(newFilm);
+        try {
+            validateFilmId(newFilm.getId());
+            FilmValidation.validateFilmReleaseDate(newFilm);
+            return filmStorage.updateFilm(newFilm);
+        } catch (ValidationException | NotFoundException ex) {
+            log.debug(ex.getMessage());
+            throw ex;
+        }
     }
 
     public void deleteFilm(Long id) {
-        filmStorage.deleteFilm(id);
+        try {
+            validateFilmId(id);
+            filmStorage.deleteFilm(id);
+        } catch (ValidationException | NotFoundException ex) {
+            log.debug(ex.getMessage());
+            throw ex;
+        }
     }
 
     public Film getFilmById(Long id) {
-        return filmStorage.getFilmById(id);
+        try {
+            validateFilmId(id);
+            return filmStorage.getFilmById(id).get();
+        } catch (ValidationException | NotFoundException ex) {
+            log.debug(ex.getMessage());
+            throw ex;
+        }
     }
 
     public Film addLikeToFilm(Long filmId, Long userId) {
-        Film film = filmStorage.getFilmById(filmId);
-        User user = userStorage.getUserById(userId);
+        try {
+            validateFilmId(filmId);
+            validateUserIdExists(userId);
 
-        if (film != null && user != null) {
-            Set<Long> userIdsLikes = film.getUserIdsLiked();
-            if (!userIdsLikes.contains(userId)) {
-                userIdsLikes.add(userId);
-                log.info("Пользователь {} поставил лайк фильму: {}.", userId, filmId);
-            }
+            filmStorage.addLikeToFilm(filmId, userId);
+            return filmStorage.getFilmById(filmId).get();
+        } catch (ValidationException | NotFoundException ex) {
+            log.debug(ex.getMessage());
+            throw ex;
         }
-
-        return film;
     }
 
     public Film deleteLikeFromFilm(Long filmId, Long userId) {
-        Film film = filmStorage.getFilmById(filmId);
-        User user = userStorage.getUserById(userId);
+        try {
+            validateFilmId(filmId);
+            validateUserIdExists(userId);
 
-        if (film != null && user != null) {
-            Set<Long> userIdsLikes = film.getUserIdsLiked();
-            if (userIdsLikes.contains(userId)) {
-                userIdsLikes.remove(userId);
-                log.info("Пользователь {} удалил лайк с фильма: {}.", userId, filmId);
-            }
+            filmStorage.removeLikeFromFilm(filmId, userId);
+            return filmStorage.getFilmById(filmId).get();
+        } catch (ValidationException | NotFoundException ex) {
+            log.debug(ex.getMessage());
+            throw ex;
         }
-
-        return film;
     }
 
     //вернуть коллекцию фильмов с сортировкой по убыванию по количеству лайков
     public Collection<Film> getTopPopularFilms(Integer count) {
-
-        FilmLikesComparator comparator = new FilmLikesComparator();
-        Comparator<Film> reversedComparator = comparator.reversed();
-
-        return filmStorage.getFilms().stream()
-                .sorted(reversedComparator)
-                .limit(count)
-                .collect(Collectors.toList());
-
+        try {
+            if (count <= 0)
+                throw new IllegalArgumentException("Параметр count должен быть положительным числом");
+            return filmStorage.getTopPopularFilms(count);
+        } catch (IllegalArgumentException ex) {
+            log.debug(ex.getMessage());
+            throw ex;
+        }
     }
 
-    static class FilmLikesComparator implements Comparator<Film> {
-        @Override
-        public int compare(Film item1, Film item2) {
 
-            if (item1.getUserIdsLiked().size() > item2.getUserIdsLiked().size()) {
-                return 1;
-            } else if (item1.getUserIdsLiked().size() < item2.getUserIdsLiked().size()) {
-                return -1;
-            } else {
-                return 0;
+    private void validateMpa(MPA mpa) throws NotFoundException {
+        if (mpa != null) {
+            var result = mpaStorage.getMpaById(mpa.getId());
+            if (result.isEmpty())
+                throw new NotFoundException("Возрастной рейтинг с id = " + mpa.getId() + " не найден");
+        }
+    }
+
+    private void validateGenres(Set<Genre> genres) throws NotFoundException {
+        if (genres != null) {
+            for (var genre : genres) {
+                var result = genreStorage.getGenreById(genre.getId());
+                if (result.isEmpty())
+                    throw new NotFoundException("Жанр с id = " + genre.getId() + " не найден");
             }
         }
+    }
+
+    private void validateFilmId(Long id) throws NotFoundException, ValidationException {
+        if (id == null)
+            throw new ValidationException("Id фильма должен быть указан");
+        if (filmStorage.getFilmById(id).isEmpty())
+            throw new NotFoundException("Фильм с id = " + id + " не найден");
+    }
+
+    private void validateUserIdExists(Long id) throws NotFoundException {
+        if (id == null)
+            throw new ValidationException("Id пользователя должен быть указан");
+        if (userStorage.getUserById(id).isEmpty())
+            throw new NotFoundException("Пользователь с id = " + id + " не найден");
     }
 }

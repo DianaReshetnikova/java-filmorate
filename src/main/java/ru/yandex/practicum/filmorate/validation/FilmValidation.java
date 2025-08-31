@@ -7,7 +7,7 @@ import java.time.LocalDate;
 import java.time.Month;
 
 public class FilmValidation {
-    public static void validateFilm(Film newFilm) throws ValidationException {
+    public static void validateFilmReleaseDate(Film newFilm) throws ValidationException {
         if (newFilm.getReleaseDate().isBefore(LocalDate.of(1895, Month.DECEMBER, 28)))
             throw new ValidationException("Дата релиза должна быть не раньше 28 декабря 1895 года;");
     }

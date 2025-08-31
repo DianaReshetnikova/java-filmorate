@@ -3,12 +3,14 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.exception.InvalidJsonFieldException;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.storage.UserStorage;
+import ru.yandex.practicum.filmorate.storage.interfaces.UserStorage;
+import ru.yandex.practicum.filmorate.validation.UserValidation;
 
 import java.util.Collection;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 // Указываем, что класс является бином и его
 // нужно добавить в контекст приложения
@@ -23,82 +25,106 @@ public class UserService {
     }
 
     public User createUser(User newUser) {
-        return userStorage.createUser(newUser);
-    }
+        try {
+            if (newUser.getId() != 0)
+                throw new InvalidJsonFieldException("Для нового пользователя нельзя указать Id");
 
-    public User updateUser(User newUser) {
-        return userStorage.updateUser(newUser);
-    }
-
-    public void deleteUser(Long id) {
-        userStorage.deleteUser(id);
-    }
-
-    public User getUserById(Long id) {
-        return userStorage.getUserById(id);
-    }
-
-    public void addFriend(Long user1Id, Long user2Id) {
-        User user1 = userStorage.getUserById(user1Id);
-        User user2 = userStorage.getUserById(user2Id);
-
-        if (user1 != null && user2 != null) {
-            Set<Long> user1Friends = user1.getFriendsIds();
-            Set<Long> user2Friends = user2.getFriendsIds();
-            if (!user1Friends.contains(user2Id) && !user2Friends.contains(user1Id)) {
-                user1Friends.add(user2Id);
-                user2Friends.add(user1Id);
-
-                log.info("Пользователи {} и {} добавили друга друга в друзья.", user1Id, user2Id);
-            }
+            UserValidation.validateUser(newUser);
+            return userStorage.createUser(newUser);
+        } catch (ValidationException | InvalidJsonFieldException | NotFoundException ex) {
+            log.debug(ex.getMessage());
+            throw ex;
         }
     }
 
-    public void deleteFriend(Long user1Id, Long user2Id) {
-        User user1 = userStorage.getUserById(user1Id);
-        User user2 = userStorage.getUserById(user2Id);
+    public User updateUser(User newUser) {
+        try {
+            validateUserId(newUser.getId());
+            UserValidation.validateUser(newUser);
 
-        if (user1 != null && user2 != null) {
-            Set<Long> user1Friends = user1.getFriendsIds();
-            Set<Long> user2Friends = user2.getFriendsIds();
+            return userStorage.updateUser(newUser);
+        } catch (ValidationException | NotFoundException ex) {
+            log.debug(ex.getMessage());
+            throw ex;
+        }
+    }
 
-            if (user1Friends.contains(user2Id) && user2Friends.contains(user1Id)) {
-                user1Friends.remove(user2Id);
-                user2Friends.remove(user1Id);
+    public void deleteUser(Long id) {
+        try {
+            validateUserId(id);
+            userStorage.deleteUser(id);
+        } catch (ValidationException | NotFoundException ex) {
+            log.debug(ex.getMessage());
+            throw ex;
+        }
+    }
 
-                log.info("Пользователи {} и {} удалили друга друга из друзей.", user1Id, user2Id);
-            }
+    public User getUserById(Long id) {
+        try {
+            validateUserId(id);
+            return userStorage.getUserById(id).get();
+        } catch (ValidationException | NotFoundException ex) {
+            log.debug(ex.getMessage());
+            throw ex;
+        }
+    }
+
+    public void addFriend(Long userId, Long friendId) {
+        try {
+            validateUserId(userId);
+            validateUserId(friendId);
+
+            if (userId.equals(friendId))
+                throw new InvalidJsonFieldException("Нельзя добавить самого себя в друзья");
+
+            userStorage.addFriend(userId, friendId);
+        } catch (ValidationException | InvalidJsonFieldException | NotFoundException ex) {
+            log.debug(ex.getMessage());
+            throw ex;
+        }
+    }
+
+    public void deleteFriend(Long userId, Long friendId) {
+        try {
+            validateUserId(userId);
+            validateUserId(friendId);
+
+            userStorage.removeFriend(userId, friendId);
+        } catch (ValidationException | NotFoundException ex) {
+            log.debug(ex.getMessage());
+            throw ex;
         }
     }
 
     public Collection<User> getFriendsOfUser(Long id) {
-        User user = userStorage.getUserById(id);
-
-        Set<User> friends = user.getFriendsIds().stream()
-                .map(userStorage::getUserById)
-                .collect(Collectors.toSet());
-
-        log.info("Пользователь {} имеет {} друзей.", id, friends.size());
-        return friends;
+        try {
+            validateUserId(id);
+            return userStorage.getFriendsOfUser(id);
+        } catch (ValidationException | NotFoundException ex) {
+            log.debug(ex.getMessage());
+            throw ex;
+        }
     }
 
     public Collection<User> getIntersectingFriends(Long userId, Long friendId) {
-        User user1 = userStorage.getUserById(userId);
-        User user2 = userStorage.getUserById(friendId);
+        try {
+            validateUserId(userId);
+            validateUserId(friendId);
 
-        Set<Long> user1Friends = user1.getFriendsIds();
-        Set<Long> user2Friends = user2.getFriendsIds();
+            if (userId.equals(friendId))
+                throw new InvalidJsonFieldException("Невозможно просмотреть общих друзей самим с собой");
 
-        //общие элементы Long для двух списков
-        Set<Long> intersectingIds = user1Friends.stream()
-                .filter(user2Friends::contains)
-                .collect(Collectors.toSet());
+            return userStorage.getIntersectingFriends(userId, friendId);
+        } catch (ValidationException | InvalidJsonFieldException | NotFoundException ex) {
+            log.debug(ex.getMessage());
+            throw ex;
+        }
+    }
 
-        log.info("Пользователь {} и {} имеют {} общих друзей.", userId, friendId, intersectingIds.size());
-
-        return intersectingIds.stream()
-                .map(userStorage::getUserById)
-                .collect(Collectors.toSet());
-
+    private void validateUserId(Long id) throws NotFoundException, ValidationException {
+        if (id == null || id < 0)
+            throw new ValidationException("Id пользователя должен быть положительным и не пустым");
+        if (userStorage.getUserById(id).isEmpty())
+            throw new NotFoundException("Пользователь с id = " + id + " не найден");
     }
 }
