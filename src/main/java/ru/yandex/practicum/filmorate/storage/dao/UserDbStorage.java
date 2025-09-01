@@ -1,6 +1,5 @@
 package ru.yandex.practicum.filmorate.storage.dao;
 
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -17,7 +16,6 @@ import java.util.*;
 
 //класс DAO (data access object) объект доступа к данным в БД к таблице users
 @Repository
-@AllArgsConstructor
 @RequiredArgsConstructor
 public class UserDbStorage implements UserStorage {
     private final JdbcTemplate jdbcTemplate;
@@ -73,6 +71,9 @@ public class UserDbStorage implements UserStorage {
         Long id = keyHolder.getKeyAs(Long.class);
         //сгенерированный id нового пользователя
         newUser.setId(id);
+
+        saveFriendsOfUser(newUser.getFriendsIds(), newUser.getId());
+
         return newUser;
     }
 
@@ -91,6 +92,8 @@ public class UserDbStorage implements UserStorage {
                 newUser.getBirthday(),
                 newUser.getId());
 
+        saveFriendsOfUser(newUser.getFriendsIds(), newUser.getId());
+
         return newUser;
     }
 
@@ -103,16 +106,8 @@ public class UserDbStorage implements UserStorage {
     @Override
     public void addFriend(Long userId, Long friendId) {
         String INSERT_NEW_FRIEND_QUERY = "INSERT INTO friendship (user_id, friend_id) VALUES (?, ?)";
-
         if (!isFriendAlreadyExist(userId, friendId)) {
-            GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
-            jdbcTemplate.update(connection -> {
-                PreparedStatement ps = connection
-                        .prepareStatement(INSERT_NEW_FRIEND_QUERY, Statement.RETURN_GENERATED_KEYS);
-                ps.setLong(1, userId);
-                ps.setLong(2, friendId);
-                return ps;
-            }, keyHolder);
+            jdbcTemplate.update(INSERT_NEW_FRIEND_QUERY, userId, friendId);
         }
     }
 
@@ -136,17 +131,29 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public Collection<User> getIntersectingFriends(Long userId, Long friendId) {
-        String FIND_ALL_INTERSECTING_FRIENDS_QUERY = "SELECT DISTINCT * FROM users AS u" +
-                " WHERE u.id IN (" +
-                " SELECT f.friend_id FROM f.friendship AS f WHERE f.user_id = ? AND f.friend_id IN (" +
-                " SELECT fs.friend_id FROM fs.friendship AS fs WHERE fs.user_id = ?);" +
-                ")";
+        String FIND_ALL_INTERSECTING_FRIENDS_QUERY = """
+                SELECT u.* FROM users u
+                JOIN friendship f1 ON (
+                    f1.user_id = ? AND u.id = f1.friend_id) OR (f1.friend_id = ? AND u.id = f1.user_id)
+                JOIN friendship f2 ON
+                    (f2.user_id = ? AND u.id = f2.friend_id) OR (f2.friend_id = ? AND u.id = f2.user_id)
+                """;
         return jdbcTemplate.query(FIND_ALL_INTERSECTING_FRIENDS_QUERY, userRowMapper, userId, friendId);
     }
 
     public List<Long> getFriendsIdsOfUser(Long id) {
         String SELECT_FRIENDS_IDS_QUERY = "SELECT friend_id FROM friendship WHERE user_id = ?";
         return jdbcTemplate.queryForList(SELECT_FRIENDS_IDS_QUERY, Long.class, id);
+    }
+
+    private void saveFriendsOfUser(Set<Long> userIdsFriends, Long userId) {
+        String DELETE_BY_ID_QUERY = "DELETE FROM friendship WHERE user_id = ?";
+        jdbcTemplate.update(DELETE_BY_ID_QUERY, userId);
+
+        String INSERT_BY_ID_QUERY = "INSERT INTO friendship WHERE user_id = ? AND friend_id = ?";
+        for (var friendId : userIdsFriends) {
+            jdbcTemplate.update(INSERT_BY_ID_QUERY, userId, friendId);
+        }
     }
 
     private boolean isFriendAlreadyExist(Long userId, Long friendId) {

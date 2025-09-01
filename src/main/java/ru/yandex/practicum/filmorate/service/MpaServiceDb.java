@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.MPA;
+import ru.yandex.practicum.filmorate.service.interfaces.MpaService;
 import ru.yandex.practicum.filmorate.storage.interfaces.MpaStorage;
 
 import java.util.Collection;
@@ -14,13 +15,15 @@ import java.util.Collection;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class MpaService {
+public class MpaServiceDb implements MpaService {
     private final MpaStorage mpaStorage;
 
+    @Override
     public Collection<MPA> getMpa() {
         return mpaStorage.getMpa();
     }
 
+    @Override
     public MPA getMpaById(Integer id) {
         return mpaStorage.getMpaById(id).orElseThrow(() -> new NotFoundException("Возрастной рейтинг с id = " + id + " не найден"));
     }

@@ -7,6 +7,7 @@ import ru.yandex.practicum.filmorate.exception.InvalidJsonFieldException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.interfaces.UserService;
 import ru.yandex.practicum.filmorate.storage.interfaces.UserStorage;
 import ru.yandex.practicum.filmorate.validation.UserValidation;
 
@@ -17,16 +18,18 @@ import java.util.Collection;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class UserService {
+public class UserServiceDb implements UserService {
     private final UserStorage userStorage;
 
+    @Override
     public Collection<User> getUsers() {
         return userStorage.getUsers();
     }
 
+    @Override
     public User createUser(User newUser) {
         try {
-            if (newUser.getId() != 0)
+            if (newUser.getId() != null)
                 throw new InvalidJsonFieldException("Для нового пользователя нельзя указать Id");
 
             UserValidation.validateUser(newUser);
@@ -37,6 +40,7 @@ public class UserService {
         }
     }
 
+    @Override
     public User updateUser(User newUser) {
         try {
             validateUserId(newUser.getId());
@@ -49,6 +53,7 @@ public class UserService {
         }
     }
 
+    @Override
     public void deleteUser(Long id) {
         try {
             validateUserId(id);
@@ -59,6 +64,7 @@ public class UserService {
         }
     }
 
+    @Override
     public User getUserById(Long id) {
         try {
             validateUserId(id);
@@ -69,6 +75,7 @@ public class UserService {
         }
     }
 
+    @Override
     public void addFriend(Long userId, Long friendId) {
         try {
             validateUserId(userId);
@@ -84,6 +91,7 @@ public class UserService {
         }
     }
 
+    @Override
     public void deleteFriend(Long userId, Long friendId) {
         try {
             validateUserId(userId);
@@ -96,6 +104,7 @@ public class UserService {
         }
     }
 
+    @Override
     public Collection<User> getFriendsOfUser(Long id) {
         try {
             validateUserId(id);
@@ -106,6 +115,7 @@ public class UserService {
         }
     }
 
+    @Override
     public Collection<User> getIntersectingFriends(Long userId, Long friendId) {
         try {
             validateUserId(userId);

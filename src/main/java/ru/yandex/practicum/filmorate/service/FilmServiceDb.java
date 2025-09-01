@@ -9,6 +9,7 @@ import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.MPA;
+import ru.yandex.practicum.filmorate.service.interfaces.FilmService;
 import ru.yandex.practicum.filmorate.storage.interfaces.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.interfaces.GenreStorage;
 import ru.yandex.practicum.filmorate.storage.interfaces.MpaStorage;
@@ -23,19 +24,21 @@ import java.util.Set;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class FilmService {
+public class FilmServiceDb implements FilmService {
     private final FilmStorage filmStorage;
     private final UserStorage userStorage;
     private final MpaStorage mpaStorage;
     private final GenreStorage genreStorage;
 
+    @Override
     public Collection<Film> getFilms() {
         return filmStorage.getFilms();
     }
 
+    @Override
     public Film createFilm(Film newFilm) {
         try {
-            if (newFilm.getId() != 0)
+            if (newFilm.getId() != null)
                 throw new InvalidJsonFieldException("Для нового фильма нельзя указать Id");
 
             FilmValidation.validateFilmReleaseDate(newFilm);
@@ -49,6 +52,7 @@ public class FilmService {
         }
     }
 
+    @Override
     public Film updateFilm(Film newFilm) {
         try {
             validateFilmId(newFilm.getId());
@@ -60,6 +64,7 @@ public class FilmService {
         }
     }
 
+    @Override
     public void deleteFilm(Long id) {
         try {
             validateFilmId(id);
@@ -70,6 +75,7 @@ public class FilmService {
         }
     }
 
+    @Override
     public Film getFilmById(Long id) {
         try {
             validateFilmId(id);
@@ -80,26 +86,26 @@ public class FilmService {
         }
     }
 
-    public Film addLikeToFilm(Long filmId, Long userId) {
+    @Override
+    public void addLikeToFilm(Long filmId, Long userId) {
         try {
             validateFilmId(filmId);
             validateUserIdExists(userId);
 
             filmStorage.addLikeToFilm(filmId, userId);
-            return filmStorage.getFilmById(filmId).get();
         } catch (ValidationException | NotFoundException ex) {
             log.debug(ex.getMessage());
             throw ex;
         }
     }
 
-    public Film deleteLikeFromFilm(Long filmId, Long userId) {
+    @Override
+    public void deleteLikeFromFilm(Long filmId, Long userId) {
         try {
             validateFilmId(filmId);
             validateUserIdExists(userId);
 
             filmStorage.removeLikeFromFilm(filmId, userId);
-            return filmStorage.getFilmById(filmId).get();
         } catch (ValidationException | NotFoundException ex) {
             log.debug(ex.getMessage());
             throw ex;
@@ -107,6 +113,7 @@ public class FilmService {
     }
 
     //вернуть коллекцию фильмов с сортировкой по убыванию по количеству лайков
+    @Override
     public Collection<Film> getTopPopularFilms(Integer count) {
         try {
             if (count <= 0)

@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.storage.dao;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -19,11 +20,12 @@ import java.sql.Types;
 import java.util.*;
 
 @Repository
+@RequiredArgsConstructor
 public class FilmDbStorage implements FilmStorage {
-    private JdbcTemplate jdbcTemplate;
-    private MpaRowMapper mpaRowMapper;
-    private GenreRowMapper genreRowMapper;
+    private final JdbcTemplate jdbcTemplate;
 
+    private final MpaRowMapper mpaRowMapper;
+    private final GenreRowMapper genreRowMapper;
     private final RowMapper<Film> filmRowMapper = (rs, rowNum) -> {
         Film film = new Film();
 
@@ -95,6 +97,9 @@ public class FilmDbStorage implements FilmStorage {
         Long id = keyHolder.getKeyAs(Long.class);
         //сгенерированный id нового фильма
         newFilm.setId(id);
+
+        saveLikesOfFilm(newFilm.getUserIdsLiked(), newFilm.getId());
+        saveGenresOfFilm(newFilm.getGenres(), newFilm.getId());
         return newFilm;
     }
 
@@ -103,7 +108,7 @@ public class FilmDbStorage implements FilmStorage {
         String UPDATE_QUERY = "UPDATE films SET name = ?," +
                 " description = ?," +
                 " release_date = ?," +
-                " duration = ?" +
+                " duration = ?," +
                 " mpa_id = ?" +
                 " WHERE id = ?";
 
@@ -114,6 +119,9 @@ public class FilmDbStorage implements FilmStorage {
                 newFilm.getDuration(),
                 newFilm.getMpa() != null ? newFilm.getMpa().getId() : null,
                 newFilm.getId());
+
+        saveLikesOfFilm(newFilm.getUserIdsLiked(), newFilm.getId());
+        saveGenresOfFilm(newFilm.getGenres(), newFilm.getId());
 
         return newFilm;
     }
@@ -152,18 +160,14 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public Collection<Film> getTopPopularFilms(Integer count) {
-        String SELECT_MOST_POPULAR_FILMS_QUERY = "SELECT * FROM films AS f\n" +
-                "JOIN film_likes AS fl\n" +
-                "ON f.id = fl.film_id\n" +
-                "WHERE f.id IN (\n" +
-                " SELECT film_id FROM (\n" +
-                "   SELECT l.film_id, COUNT(l.user_id) AS userCnt\n" +
-                "   FROM film_likes AS l\n" +
-                "   GROUP BY l.film_id\n" +
-                "   ORDER BY userCnt DESC\n" +
-                "   LIMIT (?)\n" +
-                "   ) AS tb\n" +
-                ");";
+        String SELECT_MOST_POPULAR_FILMS_QUERY = """
+                SELECT f.*
+                FROM films f
+                LEFT JOIN film_likes l ON f.id = l.film_id
+                GROUP BY f.id
+                ORDER BY COUNT(l.user_id) DESC
+                LIMIT ?
+                """;
 
         return jdbcTemplate.query(SELECT_MOST_POPULAR_FILMS_QUERY, filmRowMapper, count);
     }
@@ -188,13 +192,51 @@ public class FilmDbStorage implements FilmStorage {
                 " FROM genres AS g" +
                 " JOIN film_genres AS fg" +
                 " ON g.id = fg.genre_id" +
-                " WHERE fg.film_id = ?";
+                " WHERE fg.film_id = ?" +
+                " ORDER BY g.id";
         return jdbcTemplate.query(SELECT_GENRES_OF_FILM_BY_ID_QUERY, genreRowMapper, id);
+    }
+
+    private void saveGenresOfFilm(Set<Genre> genres, Long filmId) {
+        String FIND_ALL_GENRES_ID_QUERY = "SELECT id FROM genres";
+        String INSERT_FILM_GENRE_QUERY = "INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)";
+
+        List<Integer> genresId = jdbcTemplate.queryForList(FIND_ALL_GENRES_ID_QUERY, Integer.class);
+
+        for (var genre : genres) {
+            if (genresId.contains(genre.getId())) {
+                if (!isFilmGenreAlreadyExist(filmId, genre.getId())) {
+                    jdbcTemplate.update(INSERT_FILM_GENRE_QUERY, filmId, genre.getId());
+                }
+            }
+        }
+    }
+
+    private void saveLikesOfFilm(Set<Long> userIdsLikes, Long filmId) {
+        String DELETE_BY_ID_QUERY = "DELETE FROM film_likes WHERE film_id = ?";
+        jdbcTemplate.update(DELETE_BY_ID_QUERY, filmId);
+
+        String INSERT_BY_ID_QUERY = "INSERT INTO film_likes WHERE film_id = ? AND user_id = ?";
+        for (var userId : userIdsLikes) {
+            jdbcTemplate.update(INSERT_BY_ID_QUERY, filmId, userId);
+        }
+    }
+
+    private boolean isFilmGenreAlreadyExist(Long filmId, Integer genreId) {
+        String IS_FRIEND_ALREADY_EXIST_QUERY = "SELECT COUNT(*) FROM film_genres" +
+                " WHERE film_id = ?" +
+                " AND genre_id = ?";
+        try {
+            int result = jdbcTemplate.queryForObject(IS_FRIEND_ALREADY_EXIST_QUERY, Integer.class, filmId, genreId);
+            return result > 0;
+        } catch (EmptyResultDataAccessException ignored) {
+            return false;
+        }
     }
 
     private boolean isLikeAlreadyExist(Long filmId, Long userId) {
         String IS_LIKE_ALREADY_EXIST_QUERY = "SELECT COUNT(*) FROM film_likes" +
-                " WHERE filmId = ?" +
+                " WHERE film_id = ?" +
                 " AND user_id = ?";
         try {
             int result = jdbcTemplate.queryForObject(IS_LIKE_ALREADY_EXIST_QUERY, Integer.class, filmId, userId);

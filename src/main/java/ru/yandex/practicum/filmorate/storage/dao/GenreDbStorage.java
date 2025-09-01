@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.storage.dao;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -11,9 +12,10 @@ import java.util.Collection;
 import java.util.Optional;
 
 @Repository
+@RequiredArgsConstructor
 public class GenreDbStorage implements GenreStorage {
-    private JdbcTemplate jdbcTemplate;
-    private GenreRowMapper genreRowMapper;
+    private final JdbcTemplate jdbcTemplate;
+    private final GenreRowMapper genreRowMapper;
 
     @Override
     public Collection<Genre> getGenres() {

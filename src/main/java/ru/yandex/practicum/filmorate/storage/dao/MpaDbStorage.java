@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.storage.dao;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -11,9 +12,10 @@ import java.util.Collection;
 import java.util.Optional;
 
 @Repository
+@RequiredArgsConstructor
 public class MpaDbStorage implements MpaStorage {
-    private JdbcTemplate jdbcTemplate;
-    private MpaRowMapper mpaRowMapper;
+    private final JdbcTemplate jdbcTemplate;
+    private final MpaRowMapper mpaRowMapper;
 
     @Override
     public Collection<MPA> getMpa() {
