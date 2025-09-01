@@ -126,22 +126,18 @@ public class UserDbStorage implements UserStorage {
                 " JOIN friendship AS f" +
                 " ON u.id = f.friend_id" +
                 " WHERE f.user_id = ?";
-        return jdbcTemplate.query(FIND_ALL_FRIENDS_QUERY, userRowMapper);
+        return jdbcTemplate.query(FIND_ALL_FRIENDS_QUERY, userRowMapper, id);
     }
 
     @Override
     public Collection<User> getIntersectingFriends(Long userId, Long friendId) {
-        String FIND_ALL_INTERSECTING_FRIENDS_QUERY = """
-                SELECT u.* FROM users u
-                JOIN friendship f1 ON (
-                    f1.user_id = ? AND u.id = f1.friend_id) OR (f1.friend_id = ? AND u.id = f1.user_id)
-                JOIN friendship f2 ON
-                    (f2.user_id = ? AND u.id = f2.friend_id) OR (f2.friend_id = ? AND u.id = f2.user_id)
-                """;
+        String FIND_ALL_INTERSECTING_FRIENDS_QUERY = "SELECT * FROM users" +
+                " WHERE id IN (SELECT friend_id FROM friendship WHERE user_id = ?)" +
+                " AND id IN (SELECT friend_id FROM friendship WHERE user_id = ?)";
         return jdbcTemplate.query(FIND_ALL_INTERSECTING_FRIENDS_QUERY, userRowMapper, userId, friendId);
     }
 
-    public List<Long> getFriendsIdsOfUser(Long id) {
+    private List<Long> getFriendsIdsOfUser(Long id) {
         String SELECT_FRIENDS_IDS_QUERY = "SELECT friend_id FROM friendship WHERE user_id = ?";
         return jdbcTemplate.queryForList(SELECT_FRIENDS_IDS_QUERY, Long.class, id);
     }
