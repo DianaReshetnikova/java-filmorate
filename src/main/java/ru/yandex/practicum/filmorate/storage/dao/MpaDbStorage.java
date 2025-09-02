@@ -19,15 +19,15 @@ public class MpaDbStorage implements MpaStorage {
 
     @Override
     public Collection<MPA> getMpa() {
-        String FIND_ALL_QUERY = "SELECT * FROM mpa ORDER BY id";
-        return jdbcTemplate.query(FIND_ALL_QUERY, mpaRowMapper);
+        String findAllQuery = "SELECT * FROM mpa ORDER BY id";
+        return jdbcTemplate.query(findAllQuery, mpaRowMapper);
     }
 
     @Override
     public Optional<MPA> getMpaById(Integer id) {
-        String FIND_BY_ID = "SELECT * FROM mpa WHERE id = ?";
+        String findById = "SELECT * FROM mpa WHERE id = ?";
         try {
-            MPA mpa = jdbcTemplate.queryForObject(FIND_BY_ID, mpaRowMapper, id);
+            MPA mpa = jdbcTemplate.queryForObject(findById, mpaRowMapper, id);
             return Optional.ofNullable(mpa);
         } catch (EmptyResultDataAccessException ex) {
             return Optional.empty();

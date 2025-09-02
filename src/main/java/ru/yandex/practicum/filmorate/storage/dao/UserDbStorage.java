@@ -38,15 +38,15 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public Collection<User> getUsers() {
-        String FIND_ALL_QUERY = "SELECT * FROM users";
-        return jdbcTemplate.query(FIND_ALL_QUERY, userRowMapper);
+        String findAllQuery = "SELECT * FROM users";
+        return jdbcTemplate.query(findAllQuery, userRowMapper);
     }
 
     @Override
     public Optional<User> getUserById(Long id) {
-        String FIND_BY_ID_QUERY = "SELECT * FROM users WHERE id = ?";
+        String findByIdQuery = "SELECT * FROM users WHERE id = ?";
         try {
-            User result = jdbcTemplate.queryForObject(FIND_BY_ID_QUERY, userRowMapper, id);
+            User result = jdbcTemplate.queryForObject(findByIdQuery, userRowMapper, id);
             return Optional.ofNullable(result);
         } catch (EmptyResultDataAccessException ignored) {
             return Optional.empty();
@@ -55,12 +55,12 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public User createUser(User newUser) {
-        String INSERT_QUERY = "INSERT INTO users (email, login, name, birthday) VALUES (?, ?, ?, ?)";
+        String insertQuery = "INSERT INTO users (email, login, name, birthday) VALUES (?, ?, ?, ?)";
 
         GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(connection -> {
             PreparedStatement ps = connection
-                    .prepareStatement(INSERT_QUERY, Statement.RETURN_GENERATED_KEYS);
+                    .prepareStatement(insertQuery, Statement.RETURN_GENERATED_KEYS);
             ps.setString(1, newUser.getEmail());
             ps.setString(2, newUser.getLogin());
             ps.setString(3, newUser.getName());
@@ -79,13 +79,13 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public User updateUser(User newUser) {
-        String UPDATE_QUERY = "UPDATE users SET email = ?," +
+        String updateQuery = "UPDATE users SET email = ?," +
                 " login = ?," +
                 " name = ?," +
                 " birthday = ?" +
                 " WHERE id = ?";
 
-        jdbcTemplate.update(UPDATE_QUERY,
+        jdbcTemplate.update(updateQuery,
                 newUser.getEmail(),
                 newUser.getLogin(),
                 newUser.getName(),
@@ -99,52 +99,52 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public void deleteUser(Long id) {
-        String DELETE_BY_ID_QUERY = "DELETE FROM users WHERE id = ?";
-        jdbcTemplate.update(DELETE_BY_ID_QUERY, id);
+        String deleteByIdQuery = "DELETE FROM users WHERE id = ?";
+        jdbcTemplate.update(deleteByIdQuery, id);
     }
 
     @Override
     public void addFriend(Long userId, Long friendId) {
-        String INSERT_NEW_FRIEND_QUERY = "INSERT INTO friendship (user_id, friend_id) VALUES (?, ?)";
+        String insertNewFriendQuery = "INSERT INTO friendship (user_id, friend_id) VALUES (?, ?)";
         if (!isFriendAlreadyExist(userId, friendId)) {
-            jdbcTemplate.update(INSERT_NEW_FRIEND_QUERY, userId, friendId);
+            jdbcTemplate.update(insertNewFriendQuery, userId, friendId);
         }
     }
 
     @Override
     public void removeFriend(Long userId, Long friendId) {
-        String DELETE_FRIEND_QUERY = "DELETE FROM friendship WHERE user_id = ? AND friend_id = ?";
+        String deleteFriendQuery = "DELETE FROM friendship WHERE user_id = ? AND friend_id = ?";
 
         if (isFriendAlreadyExist(userId, friendId)) {
-            jdbcTemplate.update(DELETE_FRIEND_QUERY, userId, friendId);
+            jdbcTemplate.update(deleteFriendQuery, userId, friendId);
         }
     }
 
     @Override
     public Collection<User> getFriendsOfUser(Long id) {
-        String FIND_ALL_FRIENDS_QUERY = "SELECT * FROM users AS u" +
+        String findAllFriendsQuery = "SELECT * FROM users AS u" +
                 " JOIN friendship AS f" +
                 " ON u.id = f.friend_id" +
                 " WHERE f.user_id = ?";
-        return jdbcTemplate.query(FIND_ALL_FRIENDS_QUERY, userRowMapper, id);
+        return jdbcTemplate.query(findAllFriendsQuery, userRowMapper, id);
     }
 
     @Override
     public Collection<User> getIntersectingFriends(Long userId, Long friendId) {
-        String FIND_ALL_INTERSECTING_FRIENDS_QUERY = "SELECT * FROM users" +
+        String findAllIntersectingFriendsQuery = "SELECT * FROM users" +
                 " WHERE id IN (SELECT friend_id FROM friendship WHERE user_id = ?)" +
                 " AND id IN (SELECT friend_id FROM friendship WHERE user_id = ?)";
-        return jdbcTemplate.query(FIND_ALL_INTERSECTING_FRIENDS_QUERY, userRowMapper, userId, friendId);
+        return jdbcTemplate.query(findAllIntersectingFriendsQuery, userRowMapper, userId, friendId);
     }
 
     private List<Long> getFriendsIdsOfUser(Long id) {
-        String SELECT_FRIENDS_IDS_QUERY = "SELECT friend_id FROM friendship WHERE user_id = ?";
-        return jdbcTemplate.queryForList(SELECT_FRIENDS_IDS_QUERY, Long.class, id);
+        String selectFriendsIdsQuery = "SELECT friend_id FROM friendship WHERE user_id = ?";
+        return jdbcTemplate.queryForList(selectFriendsIdsQuery, Long.class, id);
     }
 
     private void saveFriendsOfUser(Set<Long> userIdsFriends, Long userId) {
-        String DELETE_BY_ID_QUERY = "DELETE FROM friendship WHERE user_id = ?";
-        jdbcTemplate.update(DELETE_BY_ID_QUERY, userId);
+        String deleteByIdQuery = "DELETE FROM friendship WHERE user_id = ?";
+        jdbcTemplate.update(deleteByIdQuery, userId);
 
         String INSERT_BY_ID_QUERY = "INSERT INTO friendship WHERE user_id = ? AND friend_id = ?";
         for (var friendId : userIdsFriends) {
@@ -153,11 +153,11 @@ public class UserDbStorage implements UserStorage {
     }
 
     private boolean isFriendAlreadyExist(Long userId, Long friendId) {
-        String IS_FRIEND_ALREADY_EXIST_QUERY = "SELECT COUNT(*) FROM friendship" +
+        String isFriendAlreadyExistQuery = "SELECT COUNT(*) FROM friendship" +
                 " WHERE user_id = ?" +
                 " AND friend_id = ?";
         try {
-            int result = jdbcTemplate.queryForObject(IS_FRIEND_ALREADY_EXIST_QUERY, Integer.class, userId, friendId);
+            int result = jdbcTemplate.queryForObject(isFriendAlreadyExistQuery, Integer.class, userId, friendId);
             return result > 0;
         } catch (EmptyResultDataAccessException ignored) {
             return false;

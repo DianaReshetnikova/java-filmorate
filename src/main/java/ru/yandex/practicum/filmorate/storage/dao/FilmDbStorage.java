@@ -36,9 +36,9 @@ public class FilmDbStorage implements FilmStorage {
         film.setReleaseDate(releaseDate.toLocalDate());
         film.setDuration(rs.getInt("duration"));
 
-        Integer mpa_id = rs.getInt("mpa_id");
-        if (mpa_id != null) {
-            var result = getMpaById(mpa_id);
+        Integer mpaId = rs.getInt("mpa_id");
+        if (mpaId != null) {
+            var result = getMpaById(mpaId);
             if (result.isPresent())
                 film.setMpa(result.get());
             else
@@ -59,15 +59,15 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public Collection<Film> getFilms() {
-        String FIND_ALL_QUERY = "SELECT * FROM films";
-        return jdbcTemplate.query(FIND_ALL_QUERY, filmRowMapper);
+        String findAllQuery = "SELECT * FROM films";
+        return jdbcTemplate.query(findAllQuery, filmRowMapper);
     }
 
     @Override
     public Optional<Film> getFilmById(Long id) {
-        String FIND_BY_ID = "SELECT * FROM films WHERE id = ?";
+        String findByIdQuery = "SELECT * FROM films WHERE id = ?";
         try {
-            Film film = jdbcTemplate.queryForObject(FIND_BY_ID, filmRowMapper, id);
+            Film film = jdbcTemplate.queryForObject(findByIdQuery, filmRowMapper, id);
             return Optional.ofNullable(film);
         } catch (EmptyResultDataAccessException ex) {
             return Optional.empty();
@@ -76,12 +76,12 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public Film createFilm(Film newFilm) {
-        String INSERT_QUERY = "INSERT INTO films (name, description, release_date, duration, mpa_id) VALUES (?, ?, ?, ?, ?)";
+        String insertQuery = "INSERT INTO films (name, description, release_date, duration, mpa_id) VALUES (?, ?, ?, ?, ?)";
 
         GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(connection -> {
             PreparedStatement ps = connection
-                    .prepareStatement(INSERT_QUERY, Statement.RETURN_GENERATED_KEYS);
+                    .prepareStatement(insertQuery, Statement.RETURN_GENERATED_KEYS);
             ps.setString(1, newFilm.getName());
             ps.setString(2, newFilm.getDescription());
             ps.setDate(3, Date.valueOf(newFilm.getReleaseDate()));
@@ -105,14 +105,14 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public Film updateFilm(Film newFilm) {
-        String UPDATE_QUERY = "UPDATE films SET name = ?," +
+        String updateQuery = "UPDATE films SET name = ?," +
                 " description = ?," +
                 " release_date = ?," +
                 " duration = ?," +
                 " mpa_id = ?" +
                 " WHERE id = ?";
 
-        jdbcTemplate.update(UPDATE_QUERY,
+        jdbcTemplate.update(updateQuery,
                 newFilm.getName(),
                 newFilm.getDescription(),
                 newFilm.getReleaseDate(),
@@ -128,20 +128,20 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public void deleteFilm(Long id) {
-        String DELETE_BY_ID_QUERY = "DELETE FROM films WHERE id = ?";
-        jdbcTemplate.update(DELETE_BY_ID_QUERY, id);
+        String deleteByIdQuery = "DELETE FROM films WHERE id = ?";
+        jdbcTemplate.update(deleteByIdQuery, id);
     }
 
 
     @Override
     public void addLikeToFilm(Long filmId, Long userId) {
-        String INSERT_NEW_FRIEND_QUERY = "INSERT INTO film_likes (film_id, user_id) VALUES (?, ?)";
+        String insertNewFriendQuery = "INSERT INTO film_likes (film_id, user_id) VALUES (?, ?)";
 
         if (!isLikeAlreadyExist(filmId, userId)) {
             GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
             jdbcTemplate.update(connection -> {
                 PreparedStatement ps = connection
-                        .prepareStatement(INSERT_NEW_FRIEND_QUERY, Statement.RETURN_GENERATED_KEYS);
+                        .prepareStatement(insertNewFriendQuery, Statement.RETURN_GENERATED_KEYS);
                 ps.setLong(1, filmId);
                 ps.setLong(2, userId);
                 return ps;
@@ -151,16 +151,16 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public void removeLikeFromFilm(Long filmId, Long userId) {
-        String DELETE_LIKE_QUERY = "DELETE FROM film_likes WHERE film_id = ? AND user_id = ?";
+        String deleteLikeQuery = "DELETE FROM film_likes WHERE film_id = ? AND user_id = ?";
 
         if (isLikeAlreadyExist(filmId, userId)) {
-            jdbcTemplate.update(DELETE_LIKE_QUERY, filmId, userId);
+            jdbcTemplate.update(deleteLikeQuery, filmId, userId);
         }
     }
 
     @Override
     public Collection<Film> getTopPopularFilms(Integer count) {
-        String SELECT_MOST_POPULAR_FILMS_QUERY = """
+        String selectMostPopularFilmsQuery = """
                 SELECT f.*
                 FROM films f
                 LEFT JOIN film_likes l ON f.id = l.film_id
@@ -169,13 +169,13 @@ public class FilmDbStorage implements FilmStorage {
                 LIMIT ?
                 """;
 
-        return jdbcTemplate.query(SELECT_MOST_POPULAR_FILMS_QUERY, filmRowMapper, count);
+        return jdbcTemplate.query(selectMostPopularFilmsQuery, filmRowMapper, count);
     }
 
     public Optional<MPA> getMpaById(Integer id) {
-        String SELECT_BY_ID_QUERY = "SELECT * FROM mpa WHERE id = ?";
+        String selectByIdQuery = "SELECT * FROM mpa WHERE id = ?";
         try {
-            MPA mpa = jdbcTemplate.queryForObject(SELECT_BY_ID_QUERY, mpaRowMapper, id);
+            MPA mpa = jdbcTemplate.queryForObject(selectByIdQuery, mpaRowMapper, id);
             return Optional.ofNullable(mpa);
         } catch (EmptyResultDataAccessException ex) {
             return Optional.empty();
@@ -183,38 +183,38 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     public List<Long> getUserIdsLikesOfFilm(Long id) {
-        String SELECT_USER_LIKES_BY_FILM_ID_QUERY = "SELECT user_id FROM film_likes WHERE film_id = ?";
-        return jdbcTemplate.queryForList(SELECT_USER_LIKES_BY_FILM_ID_QUERY, Long.class, id);
+        String selectUserLikesByFilmIdQuery = "SELECT user_id FROM film_likes WHERE film_id = ?";
+        return jdbcTemplate.queryForList(selectUserLikesByFilmIdQuery, Long.class, id);
     }
 
     public List<Genre> getGenresOfFilmById(Long id) {
-        String SELECT_GENRES_OF_FILM_BY_ID_QUERY = "SELECT g.id, g.name " +
+        String selectGenresOfFilmByIdQuery = "SELECT g.id, g.name " +
                 " FROM genres AS g" +
                 " JOIN film_genres AS fg" +
                 " ON g.id = fg.genre_id" +
                 " WHERE fg.film_id = ?" +
                 " ORDER BY g.id";
-        return jdbcTemplate.query(SELECT_GENRES_OF_FILM_BY_ID_QUERY, genreRowMapper, id);
+        return jdbcTemplate.query(selectGenresOfFilmByIdQuery, genreRowMapper, id);
     }
 
     private void saveGenresOfFilm(Set<Genre> genres, Long filmId) {
-        String FIND_ALL_GENRES_ID_QUERY = "SELECT id FROM genres";
-        String INSERT_FILM_GENRE_QUERY = "INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)";
+        String findAllGenresIdQuery = "SELECT id FROM genres";
+        String insertFilmGenreQuery = "INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)";
 
-        List<Integer> genresId = jdbcTemplate.queryForList(FIND_ALL_GENRES_ID_QUERY, Integer.class);
+        List<Integer> genresId = jdbcTemplate.queryForList(findAllGenresIdQuery, Integer.class);
 
         for (var genre : genres) {
             if (genresId.contains(genre.getId())) {
                 if (!isFilmGenreAlreadyExist(filmId, genre.getId())) {
-                    jdbcTemplate.update(INSERT_FILM_GENRE_QUERY, filmId, genre.getId());
+                    jdbcTemplate.update(insertFilmGenreQuery, filmId, genre.getId());
                 }
             }
         }
     }
 
     private void saveLikesOfFilm(Set<Long> userIdsLikes, Long filmId) {
-        String DELETE_BY_ID_QUERY = "DELETE FROM film_likes WHERE film_id = ?";
-        jdbcTemplate.update(DELETE_BY_ID_QUERY, filmId);
+        String deleteByIdQuery = "DELETE FROM film_likes WHERE film_id = ?";
+        jdbcTemplate.update(deleteByIdQuery, filmId);
 
         String INSERT_BY_ID_QUERY = "INSERT INTO film_likes WHERE film_id = ? AND user_id = ?";
         for (var userId : userIdsLikes) {
@@ -223,11 +223,11 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     private boolean isFilmGenreAlreadyExist(Long filmId, Integer genreId) {
-        String IS_FRIEND_ALREADY_EXIST_QUERY = "SELECT COUNT(*) FROM film_genres" +
+        String isFriendAlreadyExistQuery = "SELECT COUNT(*) FROM film_genres" +
                 " WHERE film_id = ?" +
                 " AND genre_id = ?";
         try {
-            int result = jdbcTemplate.queryForObject(IS_FRIEND_ALREADY_EXIST_QUERY, Integer.class, filmId, genreId);
+            int result = jdbcTemplate.queryForObject(isFriendAlreadyExistQuery, Integer.class, filmId, genreId);
             return result > 0;
         } catch (EmptyResultDataAccessException ignored) {
             return false;
@@ -235,11 +235,11 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     private boolean isLikeAlreadyExist(Long filmId, Long userId) {
-        String IS_LIKE_ALREADY_EXIST_QUERY = "SELECT COUNT(*) FROM film_likes" +
+        String isLikeAlreadyExistQuery = "SELECT COUNT(*) FROM film_likes" +
                 " WHERE film_id = ?" +
                 " AND user_id = ?";
         try {
-            int result = jdbcTemplate.queryForObject(IS_LIKE_ALREADY_EXIST_QUERY, Integer.class, filmId, userId);
+            int result = jdbcTemplate.queryForObject(isLikeAlreadyExistQuery, Integer.class, filmId, userId);
             return result > 0;
         } catch (EmptyResultDataAccessException ignored) {
             return false;
