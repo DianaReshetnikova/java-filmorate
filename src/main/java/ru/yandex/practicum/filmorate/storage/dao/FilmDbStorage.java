@@ -216,9 +216,9 @@ public class FilmDbStorage implements FilmStorage {
         String deleteByIdQuery = "DELETE FROM film_likes WHERE film_id = ?";
         jdbcTemplate.update(deleteByIdQuery, filmId);
 
-        String INSERT_BY_ID_QUERY = "INSERT INTO film_likes WHERE film_id = ? AND user_id = ?";
+        String insertByIdQuery = "INSERT INTO film_likes WHERE film_id = ? AND user_id = ?";
         for (var userId : userIdsLikes) {
-            jdbcTemplate.update(INSERT_BY_ID_QUERY, filmId, userId);
+            jdbcTemplate.update(insertByIdQuery, filmId, userId);
         }
     }
 
