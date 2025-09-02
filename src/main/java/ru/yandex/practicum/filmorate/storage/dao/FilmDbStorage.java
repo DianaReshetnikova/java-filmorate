@@ -172,6 +172,26 @@ public class FilmDbStorage implements FilmStorage {
         return jdbcTemplate.query(selectMostPopularFilmsQuery, filmRowMapper, count);
     }
 
+
+    @Override
+    public boolean isLikeAlreadyExist(Long filmId, Long userId) {
+        String isLikeAlreadyExistQuery = "SELECT COUNT(*) FROM film_likes" +
+                " WHERE film_id = ?" +
+                " AND user_id = ?";
+        try {
+            int result = jdbcTemplate.queryForObject(isLikeAlreadyExistQuery, Integer.class, filmId, userId);
+            return result > 0;
+        } catch (EmptyResultDataAccessException ignored) {
+            return false;
+        }
+    }
+
+    @Override
+    public void deleteAll() {
+        String deleteByIdQuery = "DELETE FROM films";
+        jdbcTemplate.update(deleteByIdQuery);
+    }
+
     public Optional<MPA> getMpaById(Integer id) {
         String selectByIdQuery = "SELECT * FROM mpa WHERE id = ?";
         try {
@@ -228,18 +248,6 @@ public class FilmDbStorage implements FilmStorage {
                 " AND genre_id = ?";
         try {
             int result = jdbcTemplate.queryForObject(isFriendAlreadyExistQuery, Integer.class, filmId, genreId);
-            return result > 0;
-        } catch (EmptyResultDataAccessException ignored) {
-            return false;
-        }
-    }
-
-    private boolean isLikeAlreadyExist(Long filmId, Long userId) {
-        String isLikeAlreadyExistQuery = "SELECT COUNT(*) FROM film_likes" +
-                " WHERE film_id = ?" +
-                " AND user_id = ?";
-        try {
-            int result = jdbcTemplate.queryForObject(isLikeAlreadyExistQuery, Integer.class, filmId, userId);
             return result > 0;
         } catch (EmptyResultDataAccessException ignored) {
             return false;

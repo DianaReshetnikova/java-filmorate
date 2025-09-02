@@ -137,6 +137,12 @@ public class UserDbStorage implements UserStorage {
         return jdbcTemplate.query(findAllIntersectingFriendsQuery, userRowMapper, userId, friendId);
     }
 
+    @Override
+    public void deleteAll() {
+        String deleteByIdQuery = "DELETE FROM users";
+        jdbcTemplate.update(deleteByIdQuery);
+    }
+
     private List<Long> getFriendsIdsOfUser(Long id) {
         String selectFriendsIdsQuery = "SELECT friend_id FROM friendship WHERE user_id = ?";
         return jdbcTemplate.queryForList(selectFriendsIdsQuery, Long.class, id);
