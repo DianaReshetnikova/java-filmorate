@@ -25,4 +25,6 @@ public interface UserStorage {
     public Collection<User> getIntersectingFriends(Long userId, Long friendId);
 
     void deleteAll();
+
+    boolean isFriendAlreadyExist(Long userId, Long friendId);
 }

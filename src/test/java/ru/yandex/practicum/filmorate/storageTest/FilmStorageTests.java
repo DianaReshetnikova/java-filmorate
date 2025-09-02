@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(classes = FilmorateApplication.class)
 @AutoConfigureTestDatabase
-class FilmoRateApplicationTests {
+class FilmStorageTests {
     @Autowired
     private FilmService filmService;
     @Autowired

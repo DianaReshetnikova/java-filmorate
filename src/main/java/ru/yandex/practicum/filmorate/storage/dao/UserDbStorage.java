@@ -143,6 +143,19 @@ public class UserDbStorage implements UserStorage {
         jdbcTemplate.update(deleteByIdQuery);
     }
 
+    @Override
+    public boolean isFriendAlreadyExist(Long userId, Long friendId) {
+        String isFriendAlreadyExistQuery = "SELECT COUNT(*) FROM friendship" +
+                " WHERE user_id = ?" +
+                " AND friend_id = ?";
+        try {
+            int result = jdbcTemplate.queryForObject(isFriendAlreadyExistQuery, Integer.class, userId, friendId);
+            return result > 0;
+        } catch (EmptyResultDataAccessException ignored) {
+            return false;
+        }
+    }
+
     private List<Long> getFriendsIdsOfUser(Long id) {
         String selectFriendsIdsQuery = "SELECT friend_id FROM friendship WHERE user_id = ?";
         return jdbcTemplate.queryForList(selectFriendsIdsQuery, Long.class, id);
@@ -155,18 +168,6 @@ public class UserDbStorage implements UserStorage {
         String insertByIdQuery = "INSERT INTO friendship WHERE user_id = ? AND friend_id = ?";
         for (var friendId : userIdsFriends) {
             jdbcTemplate.update(insertByIdQuery, userId, friendId);
-        }
-    }
-
-    private boolean isFriendAlreadyExist(Long userId, Long friendId) {
-        String isFriendAlreadyExistQuery = "SELECT COUNT(*) FROM friendship" +
-                " WHERE user_id = ?" +
-                " AND friend_id = ?";
-        try {
-            int result = jdbcTemplate.queryForObject(isFriendAlreadyExistQuery, Integer.class, userId, friendId);
-            return result > 0;
-        } catch (EmptyResultDataAccessException ignored) {
-            return false;
         }
     }
 }
