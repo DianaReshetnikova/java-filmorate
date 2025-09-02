@@ -146,9 +146,9 @@ public class UserDbStorage implements UserStorage {
         String deleteByIdQuery = "DELETE FROM friendship WHERE user_id = ?";
         jdbcTemplate.update(deleteByIdQuery, userId);
 
-        String INSERT_BY_ID_QUERY = "INSERT INTO friendship WHERE user_id = ? AND friend_id = ?";
+        String insertByIdQuery = "INSERT INTO friendship WHERE user_id = ? AND friend_id = ?";
         for (var friendId : userIdsFriends) {
-            jdbcTemplate.update(INSERT_BY_ID_QUERY, userId, friendId);
+            jdbcTemplate.update(insertByIdQuery, userId, friendId);
         }
     }
 
