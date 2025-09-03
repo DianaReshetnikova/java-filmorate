@@ -1,10 +1,12 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.service.FilmService;
+import ru.yandex.practicum.filmorate.service.FilmServiceDb;
+import ru.yandex.practicum.filmorate.service.interfaces.FilmService;
 
 import java.util.Collection;
 
@@ -13,7 +15,7 @@ import java.util.Collection;
 public class FilmController {
     private final FilmService filmService;
 
-    public FilmController(FilmService filmService) {
+    public FilmController(FilmServiceDb filmService) {
         this.filmService = filmService;
     }
 
@@ -28,6 +30,7 @@ public class FilmController {
     }
 
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public Film createFilm(@Validated @RequestBody Film newFilm) {
         return filmService.createFilm(newFilm);
     }
@@ -38,18 +41,21 @@ public class FilmController {
     }
 
     @DeleteMapping("/{filmId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteFilm(@PathVariable Long filmId) {
         filmService.deleteFilm(filmId);
     }
 
     @PutMapping("/{id}/like/{userId}")
-    public Film addLikeToFilm(@PathVariable Long id, @PathVariable Long userId) {
-        return filmService.addLikeToFilm(id, userId);
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void addLikeToFilm(@PathVariable Long id, @PathVariable Long userId) {
+        filmService.addLikeToFilm(id, userId);
     }
 
     @DeleteMapping("/{id}/like/{userId}")
-    public Film deleteLikeFromFilm(@PathVariable Long id, @PathVariable Long userId) {
-        return filmService.deleteLikeFromFilm(id, userId);
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteLikeFromFilm(@PathVariable Long id, @PathVariable Long userId) {
+        filmService.deleteLikeFromFilm(id, userId);
     }
 
     @GetMapping("/popular")
