@@ -42,6 +42,6 @@ build/
 ### VS Code ###
 .vscode/
 
-!db/.gitkeep
 *.db
 db/*
+!db/.gitkeep
